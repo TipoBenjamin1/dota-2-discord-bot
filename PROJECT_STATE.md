@@ -28,6 +28,7 @@ Main idea from `PROJECT.md`: the bot should show current Dota 2 meta, weak heroe
 - `src/heroNames.ts` - Russian aliases/transliteration for Dota hero names.
 - `src/positions.ts` - hero position weights and labels.
 - `data/cache.json` - local OpenDota cache.
+- `Dockerfile` - production container build for Northflank or other Docker hosts.
 
 ## What Is Already Implemented
 
@@ -100,7 +101,8 @@ Current `data/cache.json` snapshot observed:
 - `.specify/tasks.md` checkboxes are still unchecked even though much of the work is implemented.
 - Some Russian text in terminal output may look broken if read without UTF-8, but source files themselves read correctly with `-Encoding UTF8`.
 - `/draft` is implemented but is not described in `PROJECT.md` or `.specify/spec.md`.
-- There is no git repository in this folder, so changes cannot be compared by git status unless git is initialized later.
+- A local git repository now exists. Initial commit: `6ad771d` (`Initial Dota bot deployment setup`).
+- Discloud free bot upload was blocked by free-plan capacity/high-demand errors after an initial attempt.
 
 ## User Preference
 
@@ -134,7 +136,11 @@ At the end of meaningful future sessions, update this file with:
 - Verified TypeScript build with `npm.cmd run build`.
 - Verified the official Dota 2 datafeed fetch returned patch `7.41c` in Russian.
 - User confirmed in Discord that the `/patch` flow appears to work after the embed-limit fix.
+- Tried deploying to Discloud free plan. Added `discloud.config` and `.discloudignore`; initial upload worked, but the app needed env vars and later free-plan bot uploads were blocked by Discloud capacity/high-demand limits.
+- Added `Dockerfile` and `.dockerignore` for a cleaner Northflank deployment.
+- Initialized local git repository, ignored `.env`, `dist`, `node_modules`, `data/*.json`, and zip archives.
+- Created first local git commit `6ad771d` with the deploy-ready source tree.
 
 Next recommended step:
 
-- Run `npm.cmd run register` after setting env vars so Discord updates the `/patch` command description, then set `PATCH_ANNOUNCE_CHANNEL_ID` in `.env` for live announcements.
+- Create/push a GitHub repository for this local git repo, connect GitHub in Northflank, deploy the Dockerfile-based service, then add `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, optional `DISCORD_GUILD_ID`, and patch announcement env vars in Northflank.
