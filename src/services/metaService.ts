@@ -1,4 +1,4 @@
-import { fetchHeroMatchups, fetchHeroItemPopularity } from "../data/opendota.js";
+import { fetchHeroMatchups, fetchHeroItemPopularity, type OpenDotaRequestOptions } from "../data/opendota.js";
 import { readCache, writeCache } from "../data/cache.js";
 import { refreshData } from "../data/refresh.js";
 import { heroCanPlayPosition, positionFit } from "../positions.js";
@@ -82,13 +82,17 @@ async function requireCache(): Promise<DotaCache> {
   return refreshed;
 }
 
-async function requireHeroItems(heroId: number, cache: DotaCache): Promise<HeroItemPopularity> {
+async function requireHeroItems(
+  heroId: number,
+  cache: DotaCache,
+  options?: OpenDotaRequestOptions,
+): Promise<HeroItemPopularity> {
   if (!cache.itemPopularity) {
     cache.itemPopularity = {};
   }
   let popularity = cache.itemPopularity[String(heroId)];
   if (!popularity) {
-    popularity = await fetchHeroItemPopularity(heroId);
+    popularity = await fetchHeroItemPopularity(heroId, options);
     cache.itemPopularity[String(heroId)] = popularity;
     await writeCache(cache);
   }
@@ -134,7 +138,7 @@ export async function getCounters(heroName: string, position?: Position): Promis
   let matchups = cache.matchups[String(selectedHero.id)];
 
   if (!matchups) {
-    matchups = await fetchHeroMatchups(selectedHero.id);
+    matchups = await fetchHeroMatchups(selectedHero.id, { timeoutMs: 8000, maxAttempts: 2 });
     cache.matchups[String(selectedHero.id)] = matchups;
     await writeCache(cache);
   }
@@ -284,7 +288,7 @@ export async function getDraft(
     let matchups = cache.matchups[String(enemy.id)];
     if (!matchups) {
       try {
-        matchups = await fetchHeroMatchups(enemy.id);
+        matchups = await fetchHeroMatchups(enemy.id, { timeoutMs: 6000, maxAttempts: 1 });
         cache.matchups[String(enemy.id)] = matchups;
       } catch (error) {
         console.error(`Failed to load matchups for ${enemy.localized_name}:`, error);
@@ -485,17 +489,17 @@ export async function getItems(position: Position): Promise<PositionItemsResult>
   const earlyCounts: Record<string, number> = {};
   const midCounts: Record<string, number> = {};
   const lateCounts: Record<string, number> = {};
-  
-  for (const rating of heroesToProcess) {
+
+  const aggregate = (source: Record<string, number> | undefined, target: Record<string, number>) => {
+    if (!source) return;
+    for (const [key, val] of Object.entries(source)) {
+      target[key] = (target[key] ?? 0) + val;
+    }
+  };
+
+  await Promise.all(heroesToProcess.map(async (rating) => {
     try {
-      const popularity = await requireHeroItems(rating.heroId, cache);
-      
-      const aggregate = (source: Record<string, number> | undefined, target: Record<string, number>) => {
-        if (!source) return;
-        for (const [key, val] of Object.entries(source)) {
-          target[key] = (target[key] ?? 0) + val;
-        }
-      };
+      const popularity = await requireHeroItems(rating.heroId, cache, { timeoutMs: 7000, maxAttempts: 1 });
       
       aggregate(popularity.start_game_items, startCounts);
       aggregate(popularity.early_game_items, earlyCounts);
@@ -504,7 +508,7 @@ export async function getItems(position: Position): Promise<PositionItemsResult>
     } catch (err) {
       console.error(`Failed to load items for hero ${rating.name}:`, err);
     }
-  }
+  }));
   
   const processStage = (counts: Record<string, number>, isLater: boolean) => {
     const list: PositionItemDetail[] = [];
@@ -732,7 +736,7 @@ export async function getHeroSummary(heroName: string): Promise<HeroSummaryResul
   let lateItems: string[] = [];
 
   try {
-    const popularity = await requireHeroItems(hero.id, cache);
+    const popularity = await requireHeroItems(hero.id, cache, { timeoutMs: 7000, maxAttempts: 1 });
     
     const getTopItemsForStage = (stageCounts: Record<string, number> | undefined, isLater: boolean) => {
       if (!stageCounts) return [];

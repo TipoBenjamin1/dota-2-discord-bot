@@ -78,7 +78,7 @@ Patch note support exists:
 
 ## Latest Local Verification
 
-On 2026-06-01, `npm.cmd run build` passed after adding OpenDota retry/timeout handling for matchup requests.
+On 2026-06-01, `npm.cmd run build` passed after adding OpenDota retry/timeout handling for matchup requests and again after reducing user-facing OpenDota wait times.
 
 On 2026-05-31, `npm.cmd run build` passed successfully after the patch-note announcement changes.
 
@@ -126,6 +126,8 @@ At the end of meaningful future sessions, update this file with:
 - Fixed intermittent `OpenDota timeout: /heroes/{id}/matchups` failures by raising the OpenDota request timeout to 15 seconds and retrying requests up to 3 times.
 - Made `/draft` tolerate a failed enemy matchup fetch: it logs the failed hero matchup and continues generating draft suggestions from the remaining available data.
 - Verified TypeScript build with `npm.cmd run build`.
+- Reduced slow Discord replies by splitting OpenDota request behavior: refresh endpoints stay more patient, `/counter` uses shorter retries, `/draft` uses a fast 6-second single-attempt matchup fetch, and `/items` loads top hero item data in parallel.
+- Verified TypeScript build again with `npm.cmd run build`.
 
 ### 2026-05-31
 

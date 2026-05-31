@@ -1,19 +1,26 @@
 import type { DotaItem, HeroItemPopularity, HeroMatchup, OpenDotaHero } from "../types.js";
 
 const baseUrl = "https://api.opendota.com/api";
-const defaultTimeoutMs = 15000;
-const maxAttempts = 3;
+const defaultTimeoutMs = 10000;
+const defaultMaxAttempts = 2;
+
+export type OpenDotaRequestOptions = {
+  timeoutMs?: number;
+  maxAttempts?: number;
+};
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function getJson<T>(path: string): Promise<T> {
+async function getJson<T>(path: string, options: OpenDotaRequestOptions = {}): Promise<T> {
   let lastError: unknown;
+  const timeoutMs = options.timeoutMs ?? defaultTimeoutMs;
+  const maxAttempts = options.maxAttempts ?? defaultMaxAttempts;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), defaultTimeoutMs);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(`${baseUrl}${path}`, {
@@ -47,17 +54,23 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export async function fetchHeroStats(): Promise<OpenDotaHero[]> {
-  return getJson<OpenDotaHero[]>("/heroStats");
+  return getJson<OpenDotaHero[]>("/heroStats", { timeoutMs: 15000, maxAttempts: 3 });
 }
 
-export async function fetchHeroMatchups(heroId: number): Promise<HeroMatchup[]> {
-  return getJson<HeroMatchup[]>(`/heroes/${heroId}/matchups`);
+export async function fetchHeroMatchups(
+  heroId: number,
+  options?: OpenDotaRequestOptions,
+): Promise<HeroMatchup[]> {
+  return getJson<HeroMatchup[]>(`/heroes/${heroId}/matchups`, options);
 }
 
 export async function fetchItemsConstants(): Promise<Record<string, DotaItem>> {
-  return getJson<Record<string, DotaItem>>("/constants/items");
+  return getJson<Record<string, DotaItem>>("/constants/items", { timeoutMs: 15000, maxAttempts: 3 });
 }
 
-export async function fetchHeroItemPopularity(heroId: number): Promise<HeroItemPopularity> {
-  return getJson<HeroItemPopularity>(`/heroes/${heroId}/itemPopularity`);
+export async function fetchHeroItemPopularity(
+  heroId: number,
+  options?: OpenDotaRequestOptions,
+): Promise<HeroItemPopularity> {
+  return getJson<HeroItemPopularity>(`/heroes/${heroId}/itemPopularity`, options);
 }
