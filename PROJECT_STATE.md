@@ -78,6 +78,8 @@ Patch note support exists:
 
 ## Latest Local Verification
 
+On 2026-06-01, `npm.cmd run build` passed after adding OpenDota retry/timeout handling for matchup requests.
+
 On 2026-05-31, `npm.cmd run build` passed successfully after the patch-note announcement changes.
 
 On 2026-05-31, a real official Dota 2 datafeed request was verified with Node. It returned latest patch `7.41c` from source `dota2` with Russian summary lines.
@@ -118,6 +120,12 @@ At the end of meaningful future sessions, update this file with:
 - the next recommended step
 
 ## Work Log
+
+### 2026-06-01
+
+- Fixed intermittent `OpenDota timeout: /heroes/{id}/matchups` failures by raising the OpenDota request timeout to 15 seconds and retrying requests up to 3 times.
+- Made `/draft` tolerate a failed enemy matchup fetch: it logs the failed hero matchup and continues generating draft suggestions from the remaining available data.
+- Verified TypeScript build with `npm.cmd run build`.
 
 ### 2026-05-31
 

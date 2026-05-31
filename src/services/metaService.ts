@@ -283,8 +283,13 @@ export async function getDraft(
   await Promise.all(enemyHeroes.map(async (enemy) => {
     let matchups = cache.matchups[String(enemy.id)];
     if (!matchups) {
-      matchups = await fetchHeroMatchups(enemy.id);
-      cache.matchups[String(enemy.id)] = matchups;
+      try {
+        matchups = await fetchHeroMatchups(enemy.id);
+        cache.matchups[String(enemy.id)] = matchups;
+      } catch (error) {
+        console.error(`Failed to load matchups for ${enemy.localized_name}:`, error);
+        return;
+      }
     }
 
     const winrateMap = new Map<number, number>();
